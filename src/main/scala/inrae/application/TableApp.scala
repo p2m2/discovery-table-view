@@ -1,8 +1,9 @@
 package inrae.application
 
 import inrae.application.discovery.table.util.RequestSemanticDb
+import inrae.application.view.FilterTable
 import inrae.semantic_web.rdf.{SparqlBuilder, URI}
-import inrae.semantic_web.{SW, StatementConfiguration}
+import inrae.semantic_web.{LazyFutureJsonValue, SW, StatementConfiguration}
 import org.scalajs.dom
 import org.scalajs.dom.{MouseEvent, NodeList, document}
 import org.scalajs.dom.raw.{HTMLCollection, HTMLDataListElement, HTMLInputElement, HTMLOptionElement, HTMLSelectElement, HTMLTableCellElement, HTMLTableSectionElement}
@@ -25,6 +26,8 @@ object TableApp {
   val id_tr_header_table = "results_table_tr_thead"
   val id_footer_table = "footer_table"
   val id_body_table = "results_table_body"
+
+  var nLazyPages = 0
 
   def currentEntity() : URI = {
     info(" -- currentEntity -- ")
@@ -55,14 +58,18 @@ object TableApp {
 
   def cleanValues() = document.getElementById(id_body_table).asInstanceOf[HTMLTableSectionElement].innerHTML = ""
 
-  def updateValue(requestHandler : RequestSemanticDb) = {
-    info(" -- updateValue -- ")
-    cleanValues()
+  def updateValues(requestHandler : RequestSemanticDb,
+                   listLazyPageResults : Seq[LazyFutureJsonValue],
+                   currentPage: Int) : Unit = {
 
     val tbody = document.getElementById(id_body_table).asInstanceOf[HTMLTableSectionElement]
+
+    /* add wait logo ?*/
+    tbody.innerHTML = ""
+
     val lUriAtt = currentAttributes()
 
-    requestHandler.getValues(currentEntity(), lUriAtt.keys.toList ).map( lValues => {
+    requestHandler.getValuesFromLazyPage(listLazyPageResults(currentPage), lUriAtt.keys.toList).map( lValues => {
       tbody.innerHTML = lValues.keys.map(  uriInstance => {
 
         val mapUriAndLiteral = lValues(uriInstance)
@@ -74,40 +81,66 @@ object TableApp {
 
         val e = lUriAtt.keys.map( kUriAtt => {
           lUriAtt(kUriAtt) -> td(mapUriAndLiteral(kUriAtt).naiveLabel())
-        }).toList.sortWith( _._1 > _._1).map( _._2)
+        }).toList.sortWith( _._1 < _._1).map( _._2)
         tr(td(a(href:=uriInstance.localName,target:="_blank",labelUriInstance)),e)
       }).map( _.render ).mkString("")
+    })
+
+    /* footer update */
+    updateFooter(requestHandler,listLazyPageResults,currentPage,lUriAtt.keys.toList.length+1)
+
+  }
+
+  def updateTriggerPages(requestHandler : RequestSemanticDb) = {
+    info(" -- updateValue -- ")
+    cleanValues()
+
+    val lUriAtt = currentAttributes()
+
+    requestHandler.getLazyPagesValues(currentEntity(), lUriAtt.keys.toList ).map((some) => {
+      nLazyPages = some._1
+        val allLazyPages = some._2
+        updateValues(requestHandler,allLazyPages,0)
     })
   }
 
   def cleanHeader() = document.getElementById(id_tr_header_table).innerHTML = ""
 
-  def updateFooter(requestHandler : RequestSemanticDb, attributes : List[(URI,String)] ) = {
+  def updateFooter(requestHandler : RequestSemanticDb, listLazyPageResults : Seq[LazyFutureJsonValue],currentPage:Int,colspanValue : Int) = {
     info(" -- updateFooter -- ")
     val footer = document.getElementById(id_footer_table)
 
     footer.innerHTML = tr(
       td(
-        colspan:=attributes.length + 1, // name instance and attributes
+        colspan:=colspanValue, // name instance and attributes
           `class`:="link",
-          span(id:="page0",
+              span(id:="pageBackFooter",
                a(href:="#",
-                raw("&laquo;")),
-
-            (1 to 4).map( x => a(href:="",x.toString)), //id:="page"+x.toString(),
-
-            a(href:="#",raw("&raquo;"))
+                raw("&laquo;"))),
+                currentPage.toString + "/" + nLazyPages.toString , //id:="page"+x.toString(),
+              span(
+                id:="pageForwardFooter",
+                a(href:="#",raw("&raquo;"))
+              )
         )
-      )).render
-//id:="page0",
-    ////updateValue(requestHandler)
+      ).render
 
-    document.getElementById("page0").addEventListener( "click" ,
+    document.getElementById("pageBackFooter").addEventListener( "click" ,
       (event:MouseEvent) => {
-        println("Hello World !")
+        if ( currentPage>0) {
+          updateValues(requestHandler,listLazyPageResults,currentPage-1)
+        }
+      })
+
+    document.getElementById("pageForwardFooter").addEventListener( "click" ,
+      (event:MouseEvent) => {
+        if ( currentPage<=nLazyPages) {
+          updateValues(requestHandler,listLazyPageResults,currentPage+1)
+        }
       })
 
   }
+
 
   /**
    * Build theader tag . Contains
@@ -125,9 +158,7 @@ object TableApp {
 
     /* set new header */
     requestHandler.getAttributes(uri).map( attributes =>  {
-      println("ATTRIBUTES................................")
-      println(attributes)
-      updateFooter(requestHandler,attributes)
+
       attributes.zipWithIndex.map( objet => {
         val attrib = objet._1
         val idx = objet._2
@@ -138,7 +169,10 @@ object TableApp {
     }  ).map (
       list => {
         document.getElementById(id_tr_header_table).innerHTML = tr(th(" - "),list).render
-      }).andThen (_ => updateValue(requestHandler))
+      }).andThen ( _ => {
+      FilterTable(requestHandler).updateFilterTable()
+      updateTriggerPages(requestHandler)
+    } )
   }
 
   def updateListEntities(requestHandler : RequestSemanticDb) = {
@@ -151,7 +185,6 @@ object TableApp {
           value:=uriAndLabel._1.toString(),uriAndLabel._2
         )
       }).render
-      println("Hello22333")
       updateAttributesHeader(requestHandler)
     })
   }
@@ -164,14 +197,13 @@ object TableApp {
       /* clean tr */
       document.getElementById(id_tr_header_table).innerHTML = tr().render
       /* new request configuration */
-      val requestHandler = RequestSemanticDb(endpoint.value,"POST")
+      val requestHandler = RequestSemanticDb(endpoint.value)
 
       updateListEntities(requestHandler)
-      println("------------------Hello1")
+
       /* trigger when entity is selected */
       val listEntities = document.getElementById(id_entities_list).asInstanceOf[HTMLSelectElement]
       listEntities.addEventListener( "input" , (event:MouseEvent) => {
-        println("Hello22")
         updateAttributesHeader(requestHandler)
       })
     })

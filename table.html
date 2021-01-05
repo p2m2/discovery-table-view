@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Table</title>
     <link rel="stylesheet" type="text/css" href="table.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.1/css/all.css">
   </head>
   <body>
 
@@ -32,12 +33,22 @@
     </tbody>
   </table>
 
+<table class="filterTable">
+  <tbody id="filter_table_body"></tbody>
+</table>
+
+  </div>
+
   <table id="results_table" class="redTable">
     <thead> <tr id="results_table_tr_thead"></tr> </thead>
-    <tfoot id="footer_table">
+    <tfoot id="footer_table2">
     </tfoot>
     <tbody id="results_table_body"></tbody>
+    <tfoot id="footer_table">
+    </tfoot>
   </table>
+
+
   </body>
 
   <script type="text/javascript" src="./target/scala-2.13/table-fastopt.js"></script>
