@@ -84,13 +84,26 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
       }.toList)
   }
 
-  def getLazyPagesValues(entity: URI, attributes: List[URI]): Future[(Int,Seq[LazyFutureJsonValue])]= {
+  def getLazyPagesValues(entity: URI, listFilters : Seq[(URI,String,Literal)], attributes: List[URI]): Future[(Int,Seq[LazyFutureJsonValue])]= {
     info(" -- getValues --")
+
     var query = SW(config).something("instance")
       .isA(entity)
 
+
     attributes.foreach(attribute => {
       query = query.focus("instance").isSubjectOf(attribute, attribute.naiveLabel())
+      /* add filter contains */
+      listFilters.filter( _._1.toString() == attribute.toString() ) foreach {
+        case (_, "contains", regex ) => query = query.filter.contains(regex.value)
+        case (_, "<", operand )  => query = query.filter.inf(operand)
+        case (_, "<=", operand )  => query = query.filter.infEqual(operand)
+        case (_, ">", operand )  => query = query.filter.sup(operand)
+        case (_, ">=", operand ) => query = query.filter.supEqual(operand)
+        case (_, "=", operand )  => query = query.filter.equal(operand)
+        case (_, "<>", operand )  => query = query.filter.notEqual(operand)
+        case a => println("unknown :"+a.toString)
+      }
     })
 
     query = query.focus("instance").datatype(URI("label", "rdfs"), "label_instance")
