@@ -48,3 +48,25 @@ table.redTable tfoot .links a{
   padding: 2px 8px;
   border-radius: 5px;
 }
+
+/* Filter table */
+
+table.filterTable {
+  table-layout: fixed;
+  border-collapse: collapse;
+  /* border: 1px solid black; */
+  text-align: left;
+  height: 80px;
+}
+
+table.filterTable th, td {
+  /* border: 1px solid #AAAAAA; */
+  overflow: hidden;
+  padding: 2px;
+  width:80px;
+}
+
+table.filterTable td:nth-of-type(1) {
+    text-align: center;
+    width:100px;
+}

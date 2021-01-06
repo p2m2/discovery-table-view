@@ -6,11 +6,11 @@ import wvlet.log.Logger.rootLogger.{error, info}
 
 import scala.concurrent.Future
 
-case class RequestSemanticDb(endpoint: String, method: String = "POST_ENCODED", `type`: String = "tps") {
+case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: String = "tps") {
 
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  val config: StatementConfiguration = new StatementConfiguration()
+  val config: StatementConfiguration = StatementConfiguration()
   config.setConfigString(
     """
       {
@@ -84,45 +84,72 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST_ENCODED", 
       }.toList)
   }
 
-  def getValues(entity: URI, attributes: List[URI]): Future[Map[URI, Map[URI, Literal]]] = {
+  def getLazyPagesValues(entity: URI, listFilters : Seq[(URI,String,Literal)], attributes: List[URI]): Future[(Int,Seq[LazyFutureJsonValue])]= {
     info(" -- getValues --")
+
     var query = SW(config).something("instance")
       .isA(entity)
 
+
     attributes.foreach(attribute => {
       query = query.focus("instance").isSubjectOf(attribute, attribute.naiveLabel())
+      /* add filter contains */
+      listFilters.filter( _._1.toString() == attribute.toString() ) foreach {
+        case (_, "contains", regex ) => query = query.filter.contains(regex.value)
+        case (_, "<", operand )  => query = query.filter.inf(operand)
+        case (_, "<=", operand )  => query = query.filter.infEqual(operand)
+        case (_, ">", operand )  => query = query.filter.sup(operand)
+        case (_, ">=", operand ) => query = query.filter.supEqual(operand)
+        case (_, "=", operand )  => query = query.filter.equal(operand)
+        case (_, "<>", operand )  => query = query.filter.notEqual(operand)
+        case a => println("unknown :"+a.toString)
+      }
     })
 
     query = query.focus("instance").datatype(URI("label", "rdfs"), "label_instance")
-    query = query.focus("instance").datatype(URI("https://metabohub.peakforest.org/ontology/property#version"), "test_version")
-
-    query.selectByPage(List("instance", "label_instance", "test_version") ++ attributes.map(_.naiveLabel())).flatMap(
-      (res) => {
-        val nb: Int = res._1
-        val lFutureJsonValue: Seq[LazyFutureJsonValue] = res._2
-
-        val ret: Future[Map[URI, Map[URI, Literal]]] = nb match {
-          case n if (n > 0) => {
-            lFutureJsonValue(0).wrapped.map(response => {
-
-              response("results")("bindings").arr.map(row => {
-                val uriInstance = SparqlBuilder.createUri(row("instance"))
-
-                (uriInstance -> (attributes.map(
-                  uri => {
-                    (uri -> SparqlBuilder.createLiteral(row(uri.naiveLabel())))
-                  }
-                ) ++ {
-                  val labelInstance = SparqlBuilder.createLiteral(response("results")("datatypes")("label_instance")(uriInstance.localName).arr.head)
-                  List(uriInstance -> labelInstance)
-                }).toMap)
-              }).toMap
-            })
-          }
-          //case _ => Map()
-        }
-        ret
-      })
+    query.selectByPage(List("instance", "label_instance") ++ attributes.map(_.naiveLabel()))
   }
 
+  /**
+   *
+   * @param lFutureJsonValue
+   * @param attributes
+   * @return
+   */
+  def getValuesFromLazyPage(lFutureJsonValue : LazyFutureJsonValue, attributes: List[URI]) : Future[Map[URI, Map[URI, Literal]]] = {
+
+        lFutureJsonValue.wrapped.map(response => {
+
+          response("results")("bindings").arr.map(row => {
+            val uriInstance = SparqlBuilder.createUri(row("instance"))
+
+            (uriInstance -> (attributes.map(
+              uri => {
+                (uri -> SparqlBuilder.createLiteral(row(uri.naiveLabel())))
+              }
+            ) ++ {
+              val labelInstance = SparqlBuilder.createLiteral(response("results")("datatypes")("label_instance")(uriInstance.localName).arr.head)
+              List(uriInstance -> labelInstance)
+            }).toMap)
+          }).toMap
+        })
+      }
+
+
+  def getTypeAttribute(uriEntity : URI, uriAttribute : URI) : Future[URI] = {
+
+    val query = SW(config)
+                 .something("instance")
+                 .isA(uriEntity)
+                 .isSubjectOf(uriAttribute,"vi")
+                 .select(List("values"))
+
+    query.map(
+      response => {
+        response("results")("bindings").arr.map(r => r("vi")("datatype")).distinct match {
+          case l if l.length == 1 => URI(l(0).toString())
+          case _ => URI("http://www.w3.org/2001/XMLSchema#string")
+        }
+      })
+  }
 }
