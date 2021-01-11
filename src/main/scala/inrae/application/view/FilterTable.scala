@@ -3,9 +3,8 @@ package inrae.application.view
 import inrae.application.TableApp
 import inrae.application.discovery.table.util.RequestSemanticDb
 import inrae.semantic_web.rdf.{Literal, URI}
-import org.scalajs.dom.{MouseEvent, document}
 import org.scalajs.dom.raw.{HTMLInputElement, HTMLSelectElement, HTMLTableSectionElement}
-import scalatags.JsDom.all.bindJsAnyLike
+import org.scalajs.dom.{MouseEvent, document}
 import scalatags.Text
 import scalatags.Text.all._
 import wvlet.log.Logger.rootLogger.info
@@ -14,13 +13,17 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   val prefix_box = "box"
-  val id_filter_table_body = "filter_table_body"
+  val id_filter_table_body = "filter_container"
   val _button_add_filter="add_filter"
   val _button_apply_filter="apply_filter"
   var l_box_filter : List[(URI,URI)] = List()
 
   def button_add_filter() : Text.TypedTag[String] = {
-    button(id:=_button_add_filter, `class`:="btn btn-primary",width:="200px","Add filter")
+    button(id:=_button_add_filter, `class`:="btn btn-sm btn-primary","Add filter")
+  }
+
+  def button_apply() : Text.TypedTag[String] = {
+    button(id:=_button_apply_filter, `class`:="btn btn-sm btn-primary", "Apply")
   }
 
   def button_apply_action(): Unit = {
@@ -32,15 +35,12 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
           val idx = v._2
           val typeBox = l_box_filter(idx)._1
 
-          document.getElementById(prefix_box + idx + "_search") match {
-            case v if v != null => {
-              val value = v.asInstanceOf[HTMLInputElement].value
-              if (value.trim() != "")
-                Option(uri, "contains", Literal(value))
-              else
-                None
-            }
-            case _ => {
+
+          typeBox.toString() match {
+            case "<http://www.w3.org/2001/XMLSchema#integer>" | "<http://www.w3.org/2001/XMLSchema#float>" |
+                 "<http://www.w3.org/2001/XMLSchema#double>" |
+                 "<http://www.w3.org/2001/XMLSchema#decimal>" => {
+
               val bufVal = document.getElementById(prefix_box + idx + "_operand").asInstanceOf[HTMLInputElement].value
               if ( bufVal.trim() != "") {
                 val operand = Literal(bufVal, typeBox)
@@ -50,15 +50,27 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
               else
                 None
             }
+            case "<http://www.w3.org/2001/XMLSchema#boolean>" => {
+              val boolValue = document.getElementById(prefix_box + idx +"_bool").asInstanceOf[HTMLSelectElement].value
+              Option(uri,"=",Literal(boolValue,URI("http://www.w3.org/2001/XMLSchema#boolean")))
+            }
+            case _ => {
+              document.getElementById(prefix_box + idx + "_search") match {
+                case v if v != null => {
+                  val value = v.asInstanceOf[HTMLInputElement].value
+                  if (value.trim() != "")
+                    Option(uri, "contains", Literal(value))
+                  else
+                    None
+                }
+            }
           }
+         }
         })
+
         /* update triggered page with current filters */
         ValuesTable(requestHandler).updateTriggerPages(listFilter)
       })
-  }
-
-  def button_apply() : Text.TypedTag[String] = {
-    button(id:=_button_apply_filter, `class`:="btn btn-primary", width:="200px", "Apply")
   }
 
   def updateFilterTable() : Unit = {
@@ -69,12 +81,21 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
 
     /* button add + box filter */
     body.innerHTML =
-      tr(td(button_add_filter(),button_apply()) ,l_box_filter.zipWithIndex.map( GroupAndIdx  => {
+      div(
+        `class`:="row row-cols-auto",
+        div(
+          `class`:="col",
+          button_add_filter()
+        ),
+        div(
+          `class`:="col",
+          button_apply()
+        ) , l_box_filter.zipWithIndex.map( GroupAndIdx  => {
         val typeAndAttributeUri = GroupAndIdx._1
         val idx = GroupAndIdx._2
-        td(
-          filter_box(idx,typeAndAttributeUri._1,typeAndAttributeUri._2)
-        )
+          div(
+            `class`:="col", filter_box(idx,typeAndAttributeUri._1,typeAndAttributeUri._2)
+          )
       })).render
 
     /* set up trigger to remove box filter */
@@ -128,6 +149,7 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
       })
   }
 
+
   def filter_box(idBox: Int, `type` : URI, attributePropertyUri : URI) : Text.TypedTag[String] = {
 
     val idBoxString = prefix_box+idBox.toString
@@ -137,31 +159,52 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
       case "<http://www.w3.org/2001/XMLSchema#integer>" | "<http://www.w3.org/2001/XMLSchema#float>" |
            "<http://www.w3.org/2001/XMLSchema#double>" |
            "<http://www.w3.org/2001/XMLSchema#decimal>" => real_filter_box(idBoxString, title)
-      case _ => string_filter_box(prefix_box+idBox.toString, title)
+      case "<http://www.w3.org/2001/XMLSchema#boolean>" => boolean_filter_box(idBoxString, title)
+      case _ => string_filter_box(idBoxString, title)
     }
   }
 
   def string_filter_box(idBox: String, title : String) : Text.TypedTag[String] = {
-    table(
-      tr(
-        td(title+" ", i(id:=idBox,`class`:="fas fa-times" ))
+    div(
+      `class`:="container",
+      div(
+        `class`:="row",
+        div(
+          `class`:="col",
+          title
+        ),
+        div(
+          `class`:="col",
+          i(id:=idBox,`class`:="fas fa-times" )
+        )
       ),
-      tr(
-        td(input(
+      div(
+        `class`:="row",
+        input(
           id := idBox+"_search",
           `type` := "search")
-        )
       )
     )
   }
 
   def real_filter_box(idBox: String,title : String) : Text.TypedTag[String] = {
-    table(
-      tr(
-        td(title+" ", i(id:=idBox,`class`:="fas fa-times" ))
+    div(
+      `class`:="container",
+      div(
+        `class`:="row",
+        div(
+          `class`:="col",
+          title
+        ),
+        div(
+          `class`:="col",
+          i(id:=idBox,`class`:="fas fa-times" )
+        )
       ),
-      tr(
-        td(
+      div(
+        `class`:="row",
+        div(
+          `class`:="col",
           select(
             id := idBox+"_operator",
             name := "operator",
@@ -173,7 +216,38 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
             option(value:="<>","<>"),
           )
         ),
-        td(input(id := idBox+"_operand",size:="10",`type` := "text"))
+        div(
+          `class`:="col",
+          input(id := idBox+"_operand",size:="10",`type` := "text"))
+      )
+    )
+  }
+
+  def boolean_filter_box(idBox: String, title : String) : Text.TypedTag[String] = {
+    div(
+      `class`:="container",
+      div(
+        `class`:="row",
+        div(
+          `class`:="col",
+          title
+        ),
+        div(
+          `class`:="col",
+          i(id:=idBox,`class`:="fas fa-times" )
+        )
+      ),
+      div(
+        `class`:="row",
+        div(
+          `class`:="col",
+          select(
+            id := idBox+"_bool",
+            name := "bool_value",
+            option(value:="true","true",selected),
+            option(value:="false","false")
+          )
+        )
       )
     )
   }
