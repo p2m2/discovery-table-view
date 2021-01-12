@@ -2,10 +2,10 @@ package inrae.application.view
 
 import inrae.application.TableApp
 import inrae.application.discovery.table.util.RequestSemanticDb
-import inrae.semantic_web.LazyFutureJsonValue
+import inrae.semantic_web.LazyFutureSwResults
 import inrae.semantic_web.rdf.{Literal, URI}
+import org.scalajs.dom.raw.{HTMLInputElement, HTMLTableCellElement, HTMLTableSectionElement}
 import org.scalajs.dom.{MouseEvent, document}
-import org.scalajs.dom.raw.{HTMLInputElement, HTMLSelectElement, HTMLTableCellElement, HTMLTableSectionElement}
 import scalatags.Text.all._
 import wvlet.log.Logger.rootLogger.info
 
@@ -47,7 +47,7 @@ case class ValuesTable(requestHandler : RequestSemanticDb) {
 
   def cleanValues() = document.getElementById(id_body_table).asInstanceOf[HTMLTableSectionElement].innerHTML = ""
 
-  def updateValues(listLazyPageResults : Seq[LazyFutureJsonValue],
+  def updateValues(listLazyPageResults : Seq[LazyFutureSwResults],
                    currentPage: Int) : Unit = {
 
     val tbody = document.getElementById(id_body_table).asInstanceOf[HTMLTableSectionElement]
@@ -58,6 +58,7 @@ case class ValuesTable(requestHandler : RequestSemanticDb) {
     val lUriAtt = currentAttributes()
 
     requestHandler.getValuesFromLazyPage(listLazyPageResults(currentPage), lUriAtt.keys.toList).map( lValues => {
+
       tbody.innerHTML = lValues.keys.map(  uriInstance => {
 
         val mapUriAndLiteral = lValues(uriInstance)
@@ -94,7 +95,7 @@ case class ValuesTable(requestHandler : RequestSemanticDb) {
 
   def cleanHeader() = document.getElementById(id_tr_header_table).innerHTML = ""
 
-  def updateFooter(listLazyPageResults : Seq[LazyFutureJsonValue],currentPage:Int,colspanValue : Int) = {
+  def updateFooter(listLazyPageResults : Seq[LazyFutureSwResults],currentPage:Int,colspanValue : Int) = {
     info(" -- updateFooter -- ")
     val footer = document.getElementById(id_footer_table)
 

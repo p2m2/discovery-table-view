@@ -1,8 +1,10 @@
 package inrae.application.discovery.table.util
 
+import inrae.application.view.ProgressBar
 import inrae.semantic_web.rdf.{Literal, QueryVariable, SparqlBuilder, URI}
-import inrae.semantic_web.{LazyFutureJsonValue, SW, StatementConfiguration}
+import inrae.semantic_web.{LazyFutureSwResults, SW, SWTransaction, StatementConfiguration}
 import wvlet.log.Logger.rootLogger.{error, info}
+import ujson._
 
 import scala.concurrent.Future
 
@@ -32,27 +34,52 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
        } }
       """.stripMargin)
 
+  def manageRequestProgression(transaction : SWTransaction ) = {
+    /* progress bar management */
+    transaction.progression( (percent) => { ProgressBar.setProgressBar(percent)})
+    transaction.requestEvent( (step) => {
+      println(step)
+      if ( step == "START") {
+        ProgressBar.openWaitModal()
+      }
+      ProgressBar.setTextProgressBar(step)
+      if (step == "REQUEST_DONE")
+        ProgressBar.closeWaitModal()
+      }
+    )
+  }
+
 
   def getEntities(): Future[List[(URI, String)]] = {
-    SW(config).something("instance")
+    val transaction = SW(config).something("instance")
       .datatype(URI("label", "rdfs"), "label")
       .isSubjectOf(URI("a"))
-      .set(URI("Class", "owl"))
+        .set(URI("Class", "owl"))
+      .focus("instance")
+        .isSubjectOf(QueryVariable("attribute"))
+          .filter.isLiteral  /* at least one literal */
       .select(List("instance", "label"))
-      .map(response => response("results")("bindings").arr.map(r => {
+
+    manageRequestProgression(transaction)
+
+    transaction.commit().raw
+      .map(response => { response("results")("bindings").arr.map(r => {
+
         val uri = SparqlBuilder.createUri(r("instance"))
+
         try {
           (uri, SparqlBuilder.createLiteral(response("results")("datatypes")("label")(uri.toString)(0)).toString)
         } catch {
           case _: Throwable => (uri, uri.naiveLabel())
         }
-      }).toList)
+      }).toList })
+      .recover( v => { error(v.getMessage()) ; List() } )
   }
 
   def getAttributes(selectedEntity: URI): Future[List[(URI, String)]] = {
     info(" -- getAttributes --")
     info("uri:" + selectedEntity.toString())
-    val query = SW(config).something("attributeProperty")
+    val transaction = SW(config).something("attributeProperty")
       .datatype(URI("label", "rdfs"), "label")
       .isA(URI("DatatypeProperty", "owl"))
       /* .focus("attributeProperty")
@@ -64,7 +91,9 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
       .isSubjectOf(QueryVariable("attributeProperty"))
       .select(List("attributeProperty", "label"))
 
-    query.map(
+    manageRequestProgression(transaction)
+
+    transaction.commit().raw.map(
       response => {
         response("results")("bindings").arr.map(r => {
 
@@ -84,17 +113,17 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
       }.toList)
   }
 
-  def getLazyPagesValues(entity: URI, listFilters : Seq[(URI,String,Literal)], attributes: List[URI]): Future[(Int,Seq[LazyFutureJsonValue])]= {
+  def getLazyPagesValues(entity: URI, listFilters : Seq[(URI,String,Literal)], attributes: List[URI]): Future[(Int,Seq[LazyFutureSwResults])]= {
     info(" -- getValues --")
 
     var query = SW(config).something("instance")
       .isA(entity)
-
-
-    attributes.foreach(attribute => {
-      query = query.focus("instance").isSubjectOf(attribute, attribute.naiveLabel())
+//
+    /* if an attribute filter is defined with add an attribute on the query otherwise is better to defined a dataset to get missing data */
+    attributes.filter( listFilters.map( _._1 ).contains(_)  ).foreach(attribute => {
+      query = query.focus("instance").isSubjectOf(attribute)
       /* add filter contains */
-      listFilters.filter( _._1.toString() == attribute.toString() ) foreach {
+      listFilters.filter( _._1 == attribute ) foreach {
         case (_, "contains", regex ) => query = query.filter.contains(regex.value)
         case (_, "<", operand )  => query = query.filter.inf(operand)
         case (_, "<=", operand )  => query = query.filter.infEqual(operand)
@@ -104,6 +133,10 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
         case (_, "<>", operand )  => query = query.filter.notEqual(operand)
         case a => println("unknown :"+a.toString)
       }
+    })
+
+    attributes.foreach(attribute => {
+      query = query.focus("instance").datatype(attribute, attribute.naiveLabel())
     })
 
     query = query.focus("instance").datatype(URI("label", "rdfs"), "label_instance")
@@ -116,16 +149,22 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
    * @param attributes
    * @return
    */
-  def getValuesFromLazyPage(lFutureJsonValue : LazyFutureJsonValue, attributes: List[URI]) : Future[Map[URI, Map[URI, Literal]]] = {
+  def getValuesFromLazyPage(lFutureJsonValue : LazyFutureSwResults, attributes: List[URI]) : Future[Map[URI, Map[URI, Literal]]] = {
+        val transaction = lFutureJsonValue.wrapped
 
-        lFutureJsonValue.wrapped.map(response => {
+        manageRequestProgression(transaction)
+
+        transaction.commit().raw.map(response => {
 
           response("results")("bindings").arr.map(row => {
             val uriInstance = SparqlBuilder.createUri(row("instance"))
-
             (uriInstance -> (attributes.map(
               uri => {
-                (uri -> SparqlBuilder.createLiteral(row(uri.naiveLabel())))
+                val lit = response("results")("datatypes")(uri.naiveLabel()).obj.getOrElse(uriInstance.localName,Js.Arr()).arr.headOption match {
+                  case Some(value) => SparqlBuilder.createLiteral(value) //SparqlBuilder.createLiteral(row(uri.naiveLabel()))
+                  case None => Literal("--")
+                }
+                (uri -> lit)
               }
             ) ++ {
               val labelInstance = SparqlBuilder.createLiteral(response("results")("datatypes")("label_instance")(uriInstance.localName).arr.head)
@@ -138,13 +177,15 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
 
   def getTypeAttribute(uriEntity : URI, uriAttribute : URI) : Future[URI] = {
 
-    val query = SW(config)
+    val transaction = SW(config)
                  .something("instance")
                  .isA(uriEntity)
                  .isSubjectOf(uriAttribute,"vi")
                  .select(List("values"))
 
-    query.map(
+    manageRequestProgression(transaction)
+
+    transaction.commit().raw.map(
       response => {
         response("results")("bindings").arr.map(r => r("vi")("datatype")).distinct match {
           case l if l.length == 1 => URI(l(0).toString())
