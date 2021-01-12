@@ -2,7 +2,7 @@ package inrae.application.discovery.table.util
 
 import inrae.application.view.ProgressBar
 import inrae.semantic_web.rdf.{Literal, QueryVariable, SparqlBuilder, URI}
-import inrae.semantic_web.{LazyFutureSwResults, SW, StatementConfiguration}
+import inrae.semantic_web.{LazyFutureSwResults, SW, SWTransaction, StatementConfiguration}
 import wvlet.log.Logger.rootLogger.{error, info}
 import ujson._
 
@@ -26,13 +26,28 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
       """"
        }],
        "settings" : {
-         "logLevel" : "info",
+         "logLevel" : "off",
          "sizeBatchProcessing" : 10,
          "cache" : true,
          "driver" : "inrae.semantic_web.driver.RosHTTPDriver",
          "pageSize" : 20
        } }
       """.stripMargin)
+
+  def manageRequestProgression(transaction : SWTransaction ) = {
+    /* progress bar management */
+    transaction.progression( (percent) => { ProgressBar.setProgressBar(percent)})
+    transaction.requestEvent( (step) => {
+      println(step)
+      if ( step == "START") {
+        ProgressBar.openWaitModal()
+      }
+      ProgressBar.setTextProgressBar(step)
+      if (step == "REQUEST_DONE")
+        ProgressBar.closeWaitModal()
+      }
+    )
+  }
 
 
   def getEntities(): Future[List[(URI, String)]] = {
@@ -45,9 +60,7 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
           .filter.isLiteral  /* at least one literal */
       .select(List("instance", "label"))
 
-    /* progress bar management */
-    transaction.progression( (percent) => { ProgressBar.setProgressBar(percent)})
-    transaction.requestEvent( (step) => { ProgressBar.setTextProgressBar(step)} )
+    manageRequestProgression(transaction)
 
     transaction.commit().raw
       .map(response => { response("results")("bindings").arr.map(r => {
@@ -78,9 +91,7 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
       .isSubjectOf(QueryVariable("attributeProperty"))
       .select(List("attributeProperty", "label"))
 
-    /* progress bar management */
-    transaction.progression( (percent) => { ProgressBar.setProgressBar(percent)})
-    transaction.requestEvent( (step) => { ProgressBar.setTextProgressBar(step)} )
+    manageRequestProgression(transaction)
 
     transaction.commit().raw.map(
       response => {
@@ -141,9 +152,7 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
   def getValuesFromLazyPage(lFutureJsonValue : LazyFutureSwResults, attributes: List[URI]) : Future[Map[URI, Map[URI, Literal]]] = {
         val transaction = lFutureJsonValue.wrapped
 
-        /* progress bar management */
-        transaction.progression( (percent) => { ProgressBar.setProgressBar(percent)})
-        transaction.requestEvent( (step) => { ProgressBar.setTextProgressBar(step)} )
+        manageRequestProgression(transaction)
 
         transaction.commit().raw.map(response => {
 
@@ -174,9 +183,7 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
                  .isSubjectOf(uriAttribute,"vi")
                  .select(List("values"))
 
-    /* progress bar management */
-    transaction.progression( (percent) => { ProgressBar.setProgressBar(percent)})
-    transaction.requestEvent( (step) => { ProgressBar.setTextProgressBar(step)} )
+    manageRequestProgression(transaction)
 
     transaction.commit().raw.map(
       response => {

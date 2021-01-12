@@ -19,11 +19,11 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
   var l_box_filter : List[(URI,URI)] = List()
 
   def button_add_filter() : Text.TypedTag[String] = {
-    button(id:=_button_add_filter, `class`:="btn btn-sm btn-primary","Add filter")
+    button(id:=_button_add_filter, `class`:="btn btn-sm btn-primary", width:="120px", "Add filter")
   }
 
   def button_apply() : Text.TypedTag[String] = {
-    button(id:=_button_apply_filter, `class`:="btn btn-sm btn-primary", "Apply")
+    button(id:=_button_apply_filter, `class`:="btn btn-sm btn-primary", width:="120px", "Apply")
   }
 
   def button_apply_action(): Unit = {

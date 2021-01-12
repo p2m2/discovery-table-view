@@ -10,6 +10,7 @@ object ProgressBar {
   val id_progress_bar = "bar-progress"
   var div_progress_bar = "div-bar-progress"
 
+
   def setDivProgressBar(percent : Double) :  Text.TypedTag[String] = {
    div(
       id:="div-bar-progress",
@@ -23,14 +24,26 @@ object ProgressBar {
     )
   }
 
+  def openWaitModal() = {
+    $("#processing-data-button").click()
+  }
+
+  def closeWaitModal() = {
+    $("#"+div_progress_bar).fadeOut("slow")
+    $("#close-processing-data-button").click()
+  }
+
   def clean() = {
     document.getElementById(id_progress_bar).innerHTML = setDivProgressBar(0).render
   }
 
   def setProgressBar(percent : Double) : Unit = {
     document.getElementById(id_progress_bar).innerHTML = setDivProgressBar(percent).render
-    $(div_progress_bar).fadeOut()
 
+    if (percent >= 1.0) {
+      $("#"+div_progress_bar).fadeOut("slow")
+      $("#close-processing-data-button").click()
+    }
   }
 
   def setTextProgressBar(text : String) = {

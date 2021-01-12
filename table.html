@@ -21,7 +21,7 @@
       <tr>
         <!-- URL endpoint -->
         <td>
-          <h5> URL Endpoint </h5>
+          <h5> Database Endpoint </h5>
         </td>
         <td>
               <input id="endpoint" type="text" list="endpoints"  size="80" placeholder="http://">
@@ -52,7 +52,28 @@
 
 
   <div id="filter_container" class="container-fluid"></div>
+  </div>
 
+  <div id="pageSelector_container" class="container-fluid"></div>
+    <nav aria-label="Page navigation example">
+      <ul class="pagination">
+        <li class="page-item">
+          <a class="page-link" href="#" aria-label="Previous">
+            <span aria-hidden="true">&laquo;</span>
+            <span class="sr-only">Previous</span>
+          </a>
+        </li>
+        <li class="page-item"><a class="page-link" href="#">1</a></li>
+        <li class="page-item"><a class="page-link" href="#">2</a></li>
+        <li class="page-item"><a class="page-link" href="#">3</a></li>
+        <li class="page-item">
+          <a class="page-link" href="#" aria-label="Next">
+            <span aria-hidden="true">&raquo;</span>
+            <span class="sr-only">Next</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
   </div>
 
   <table id="results_table" class="table table-sm table-hover">
@@ -63,7 +84,24 @@
     <tfoot id="footer_table">
     </tfoot>
   </table>
-  </body>
 
+  <!-- Trigger the modal with a button -->
+  <div id="processing-data-button" type="button" class="invisible" data-bs-toggle="modal" data-bs-target="#processing-data"></div>
+  <!-- Modal -->
+  <div class="modal fade" id="processing-data" data-bs-backdrop="static"  data-bs-keyboard="false"  tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Processing<i class="fas fa-spinner fa-spin"></i></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-footer">
+          <button id="close-processing-data-button" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </body>
   <script type="text/javascript" src="./target/scala-2.13/table-fastopt.js"></script>
 </html>
