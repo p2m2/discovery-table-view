@@ -2,8 +2,8 @@ package inrae.application.view
 
 import org.querki.jquery._
 import org.scalajs.dom.document
-import scalatags.Text
-import scalatags.Text.all._
+
+import scalatags.JsDom.all._
 
 import scala.scalajs.js.timers._
 
@@ -13,7 +13,7 @@ object ProgressBar {
   var div_progress_bar = "div-bar-progress"
 
 
-  def setDivProgressBar(percent : Double) :  Text.TypedTag[String] = {
+  def setDivProgressBar(percent : Double) = {
    div(
       id:="div-bar-progress",
      `class`:="progress-bar progress-bar-striped progress-bar-animated",
@@ -32,7 +32,7 @@ object ProgressBar {
     this.synchronized {
       nModal +=  1
       if ( nModal == 1 ) {
-        println("OPEN")
+        $("#message-data-processing").empty().append(p().render)
         $("#processing-data-button").click()
       }
     }
@@ -43,20 +43,28 @@ object ProgressBar {
       nModal -=  1
       if ( nModal == 0 ) {
         setTimeout(1000) {
-          println("CLOSE")
           $("#close-processing-data-button").click()
         }
       }
     }
   }
 
+  def modalDisplayError(message: String) = {
+      $("#message-data-processing").empty().append(
+        div(
+          `class`:="alert",
+          message
+        ).render
+      )
+  }
+
 
   def clean() = {
-    document.getElementById(id_progress_bar).innerHTML = setDivProgressBar(0).render
+    $("#"+id_progress_bar).empty().append(setDivProgressBar(0).render)
   }
 
   def setProgressBar(percent : Double) : Unit = {
-    document.getElementById(id_progress_bar).innerHTML = setDivProgressBar(percent).render
+    $("#"+id_progress_bar).empty().append(setDivProgressBar(percent).render)
 
     if (percent >= 1.0) {
       $("#"+div_progress_bar).fadeOut("slow")

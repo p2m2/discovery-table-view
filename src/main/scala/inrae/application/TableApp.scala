@@ -64,6 +64,7 @@ object TableApp {
 
     endpointUserOption match {
       case Some(endpointUser) =>  {
+        endpoint.value=endpointUser
         setRequestSemanticDb(endpointUser)
       }
       case None =>

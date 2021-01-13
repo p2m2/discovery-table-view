@@ -74,7 +74,10 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
           case _: Throwable => (uri, uri.naiveLabel())
         }
       }).toList })
-      .recover( v => { error(v.getMessage()) ; List() } )
+      .recover( v => {
+        ProgressBar.modalDisplayError(v.getMessage())
+        List()
+      } )
   }
 
   def getAttributes(selectedEntity: URI): Future[List[(URI, String)]] = {
