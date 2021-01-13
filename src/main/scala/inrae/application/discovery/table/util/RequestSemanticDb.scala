@@ -4,7 +4,6 @@ import inrae.application.view.ProgressBar
 import inrae.semantic_web.rdf.{Literal, QueryVariable, SparqlBuilder, URI}
 import inrae.semantic_web.{LazyFutureSwResults, SW, SWTransaction, StatementConfiguration}
 import wvlet.log.Logger.rootLogger.{error, info}
-import ujson._
 
 import scala.concurrent.Future
 
@@ -34,19 +33,21 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
        } }
       """.stripMargin)
 
+  type Results = Map[URI, Map[URI, Literal]]
+  var cacheLazyPageResults =  Map[LazyFutureSwResults,Map[URI, Map[URI, Literal]]]()
+
   def manageRequestProgression(transaction : SWTransaction ) = {
     /* progress bar management */
     transaction.progression( (percent) => { ProgressBar.setProgressBar(percent)})
     transaction.requestEvent( (step) => {
-      println(step)
       if ( step == "START") {
         ProgressBar.openWaitModal()
       }
       ProgressBar.setTextProgressBar(step)
-      if (step == "REQUEST_DONE")
+      if (step == "REQUEST_DONE") {
         ProgressBar.closeWaitModal()
       }
-    )
+    })
   }
 
 
@@ -116,6 +117,9 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
   def getLazyPagesValues(entity: URI, listFilters : Seq[(URI,String,Literal)], attributes: List[URI]): Future[(Int,Seq[LazyFutureSwResults])]= {
     info(" -- getValues --")
 
+    /* empty cache */
+    cacheLazyPageResults =  Map[LazyFutureSwResults,Map[URI, Map[URI, Literal]]]()
+
     var query = SW(config).something("instance")
       .isA(entity)
 //
@@ -150,29 +154,36 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
    * @return
    */
   def getValuesFromLazyPage(lFutureJsonValue : LazyFutureSwResults, attributes: List[URI]) : Future[Map[URI, Map[URI, Literal]]] = {
+
+    cacheLazyPageResults.get(lFutureJsonValue) match {
+      case Some(v) => Future { v }
+      case None => {
         val transaction = lFutureJsonValue.wrapped
-
-        manageRequestProgression(transaction)
-
-        transaction.commit().raw.map(response => {
-
-          response("results")("bindings").arr.map(row => {
-            val uriInstance = SparqlBuilder.createUri(row("instance"))
-            (uriInstance -> (attributes.map(
-              uri => {
-                val lit = response("results")("datatypes")(uri.naiveLabel()).obj.getOrElse(uriInstance.localName,Js.Arr()).arr.headOption match {
-                  case Some(value) => SparqlBuilder.createLiteral(value) //SparqlBuilder.createLiteral(row(uri.naiveLabel()))
-                  case None => Literal("--")
+        this.synchronized {
+          manageRequestProgression(transaction)
+          transaction.commit().raw.map(response => {
+            val res = response("results")("bindings").arr.map(row => {
+              val uriInstance = SparqlBuilder.createUri(row("instance"))
+              (uriInstance -> (attributes.map(
+                uri => {
+                  val lit = response("results")("datatypes")(uri.naiveLabel()).obj.getOrElse(uriInstance.localName,ujson.Arr()).arr.headOption match {
+                    case Some(value) => SparqlBuilder.createLiteral(value) //SparqlBuilder.createLiteral(row(uri.naiveLabel()))
+                    case None => Literal("--")
+                  }
+                  (uri -> lit)
                 }
-                (uri -> lit)
-              }
-            ) ++ {
-              val labelInstance = SparqlBuilder.createLiteral(response("results")("datatypes")("label_instance")(uriInstance.localName).arr.head)
-              List(uriInstance -> labelInstance)
-            }).toMap)
-          }).toMap
-        })
+              ) ++ {
+                val labelInstance = SparqlBuilder.createLiteral(response("results")("datatypes")("label_instance")(uriInstance.localName).arr.head)
+                List(uriInstance -> labelInstance)
+              }).toMap)
+            }).toMap
+            cacheLazyPageResults = cacheLazyPageResults ++ Map(lFutureJsonValue -> res)
+            res
+          })
+        }
       }
+    }
+  }
 
 
   def getTypeAttribute(uriEntity : URI, uriAttribute : URI) : Future[URI] = {

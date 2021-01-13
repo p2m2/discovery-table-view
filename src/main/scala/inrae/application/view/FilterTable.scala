@@ -9,7 +9,7 @@ import scalatags.Text
 import scalatags.Text.all._
 import wvlet.log.Logger.rootLogger.info
 
-case class FilterTable(requestHandler : RequestSemanticDb) {
+case object FilterTable {
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   val prefix_box = "box"
@@ -26,7 +26,7 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
     button(id:=_button_apply_filter, `class`:="btn btn-sm btn-primary", width:="120px", "Apply")
   }
 
-  def button_apply_action(): Unit = {
+  def button_apply_action(requestHandler : RequestSemanticDb): Unit = {
     document.getElementById(_button_apply_filter).addEventListener(
       "click" ,
       (event:MouseEvent) => {
@@ -69,11 +69,11 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
         })
 
         /* update triggered page with current filters */
-        ValuesTable(requestHandler).updateTriggerPages(listFilter)
+        ValuesTable.updateTriggerPages(requestHandler,listFilter)
       })
   }
 
-  def updateFilterTable() : Unit = {
+  def updateFilterTable(requestHandler : RequestSemanticDb) : Unit = {
     info(" -- updateFilterTable -- ")
 
     /* Print Button and Filter Box */
@@ -94,7 +94,7 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
         val typeAndAttributeUri = GroupAndIdx._1
         val idx = GroupAndIdx._2
           div(
-            `class`:="col", filter_box(idx,typeAndAttributeUri._1,typeAndAttributeUri._2)
+            `class`:="col", filter_box(idx,typeAndAttributeUri._1,typeAndAttributeUri._2),
           )
       })).render
 
@@ -102,15 +102,15 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
     l_box_filter.zipWithIndex.map(_._2).foreach( index => {
         document.getElementById(prefix_box+index.toString).addEventListener("click" , (event:MouseEvent) => {
           l_box_filter = l_box_filter.take(index) ++ l_box_filter.drop(index+1)
-          updateFilterTable()
+          updateFilterTable(requestHandler)
         })
       })
 
     /* Execute request when "apply" is triggered */
-    button_apply_action()
+    button_apply_action(requestHandler)
 
     val entityClassUri  : URI     = TableApp.currentEntity()
-    val attributes : Map[URI,Int] = ValuesTable(requestHandler).currentAttributes()
+    val attributes : Map[URI,Int] = ValuesTable.currentAttributes()
 
     val add_f = document.getElementById(_button_add_filter)
 
@@ -135,16 +135,16 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
             requestHandler.getTypeAttribute(entityClassUri,attributePropertyUri).map( `type`  => {
               l_box_filter = l_box_filter ++ List((`type`,attributePropertyUri))
               /* refresh list box */
-              updateFilterTable()
+              updateFilterTable(requestHandler)
 
               document.getElementById(_button_add_filter)
-                .addEventListener("click" , (event:MouseEvent) => { updateFilterTable() })
+                .addEventListener("click" , (event:MouseEvent) => { updateFilterTable(requestHandler) })
             })
           })
 
         select_f.addEventListener( "blur" ,
           (event:MouseEvent) => {
-            updateFilterTable()
+            updateFilterTable(requestHandler)
           })
       })
   }
@@ -175,7 +175,7 @@ case class FilterTable(requestHandler : RequestSemanticDb) {
         ),
         div(
           `class`:="col",
-          i(id:=idBox,`class`:="fas fa-times" )
+          i(id:=idBox,`class`:="fas fa-times")
         )
       ),
       div(
