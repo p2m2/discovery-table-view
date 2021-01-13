@@ -5,6 +5,8 @@ import org.scalajs.dom.document
 import scalatags.Text
 import scalatags.Text.all._
 
+import scala.scalajs.js.timers._
+
 object ProgressBar {
 
   val id_progress_bar = "bar-progress"
@@ -24,14 +26,30 @@ object ProgressBar {
     )
   }
 
+  var nModal = 0
+
   def openWaitModal() = {
-    $("#processing-data-button").click()
+    this.synchronized {
+      nModal +=  1
+      if ( nModal == 1 ) {
+        println("OPEN")
+        $("#processing-data-button").click()
+      }
+    }
   }
 
   def closeWaitModal() = {
-    $("#"+div_progress_bar).fadeOut("slow")
-    $("#close-processing-data-button").click()
+    this.synchronized {
+      nModal -=  1
+      if ( nModal == 0 ) {
+        setTimeout(1000) {
+          println("CLOSE")
+          $("#close-processing-data-button").click()
+        }
+      }
+    }
   }
+
 
   def clean() = {
     document.getElementById(id_progress_bar).innerHTML = setDivProgressBar(0).render
