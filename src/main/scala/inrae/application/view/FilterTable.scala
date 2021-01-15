@@ -133,6 +133,7 @@ case object FilterTable {
           (event:MouseEvent) => {
             val attributePropertyUri = URI(select_f.value)
             requestHandler.getTypeAttribute(entityClassUri,attributePropertyUri).map( `type`  => {
+
               l_box_filter = l_box_filter ++ List((`type`,attributePropertyUri))
               /* refresh list box */
               updateFilterTable(requestHandler)
@@ -151,7 +152,6 @@ case object FilterTable {
 
 
   def filter_box(idBox: Int, `type` : URI, attributePropertyUri : URI) : Text.TypedTag[String] = {
-
     val idBoxString = prefix_box+idBox.toString
     val title = attributePropertyUri.naiveLabel()
 

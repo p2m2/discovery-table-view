@@ -2,10 +2,11 @@ package inrae.application.discovery.table.util
 
 import inrae.application.view.ProgressBar
 import inrae.semantic_web.rdf.{Literal, QueryVariable, SparqlBuilder, URI}
-import inrae.semantic_web.{LazyFutureSwResults, SW, SWTransaction, StatementConfiguration}
+import inrae.semantic_web.{SWDiscovery, SWTransaction, StatementConfiguration}
 import wvlet.log.Logger.rootLogger.{error, info}
 
 import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
 case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: String = "tps") {
 
@@ -28,13 +29,13 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
          "logLevel" : "off",
          "sizeBatchProcessing" : 10,
          "cache" : true,
-         "driver" : "inrae.semantic_web.driver.RosHTTPDriver",
+         "driver" : "inrae.semantic_web.driver.SHTTPDriver",
          "pageSize" : 20
        } }
       """.stripMargin)
 
   type Results = Map[URI, Map[URI, Literal]]
-  var cacheLazyPageResults =  Map[LazyFutureSwResults,Map[URI, Map[URI, Literal]]]()
+  var cacheLazyPageResults =  Map[SWTransaction,Map[URI, Map[URI, Literal]]]()
 
   def manageRequestProgression(transaction : SWTransaction ) = {
     /* progress bar management */
@@ -52,7 +53,7 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
 
 
   def getEntities(): Future[List[(URI, String)]] = {
-    val transaction = SW(config).something("instance")
+    val transaction = SWDiscovery(config).something("instance")
       .datatype(URI("label", "rdfs"), "label")
       .isSubjectOf(URI("a"))
         .set(URI("Class", "owl"))
@@ -83,7 +84,7 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
   def getAttributes(selectedEntity: URI): Future[List[(URI, String)]] = {
     info(" -- getAttributes --")
     info("uri:" + selectedEntity.toString())
-    val transaction = SW(config).something("attributeProperty")
+    val transaction = SWDiscovery(config).something("attributeProperty")
       .datatype(URI("label", "rdfs"), "label")
       .isA(URI("DatatypeProperty", "owl"))
       /* .focus("attributeProperty")
@@ -117,13 +118,13 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
       }.toList)
   }
 
-  def getLazyPagesValues(entity: URI, listFilters : Seq[(URI,String,Literal)], attributes: List[URI]): Future[(Int,Seq[LazyFutureSwResults])]= {
+  def getLazyPagesValues(entity: URI, listFilters : Seq[(URI,String,Literal)], attributes: List[URI]): Future[(Int,Seq[SWTransaction])]= {
     info(" -- getValues --")
 
     /* empty cache */
-    cacheLazyPageResults =  Map[LazyFutureSwResults,Map[URI, Map[URI, Literal]]]()
+    cacheLazyPageResults =  Map[SWTransaction,Map[URI, Map[URI, Literal]]]()
 
-    var query = SW(config).something("instance")
+    var query = SWDiscovery(config).something("instance")
       .isA(entity)
 //
     /* if an attribute filter is defined with add an attribute on the query otherwise is better to defined a dataset to get missing data */
@@ -156,12 +157,12 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
    * @param attributes
    * @return
    */
-  def getValuesFromLazyPage(lFutureJsonValue : LazyFutureSwResults, attributes: List[URI]) : Future[Map[URI, Map[URI, Literal]]] = {
+  def getValuesFromLazyPage(lFutureJsonValue : SWTransaction, attributes: List[URI]) : Future[Map[URI, Map[URI, Literal]]] = {
 
     cacheLazyPageResults.get(lFutureJsonValue) match {
       case Some(v) => Future { v }
       case None => {
-        val transaction = lFutureJsonValue.wrapped
+        val transaction = lFutureJsonValue
         this.synchronized {
           manageRequestProgression(transaction)
           transaction.commit().raw.map(response => {
@@ -191,19 +192,22 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
 
   def getTypeAttribute(uriEntity : URI, uriAttribute : URI) : Future[URI] = {
 
-    val transaction = SW(config)
+    val transaction = SWDiscovery(config)
                  .something("instance")
                  .isA(uriEntity)
                  .isSubjectOf(uriAttribute,"vi")
-                 .select(List("values"))
+                 .select(List("values"),50)
 
     manageRequestProgression(transaction)
 
     transaction.commit().raw.map(
       response => {
-        response("results")("bindings").arr.map(r => r("vi")("datatype")).distinct match {
+        Try(response("results")("bindings").arr.map(r => r("vi")("datatype")).distinct match {
           case l if l.length == 1 => URI(l(0).toString())
           case _ => URI("http://www.w3.org/2001/XMLSchema#string")
+        }) match {
+          case Success(v) => v
+          case Failure(_) => URI("http://www.w3.org/2001/XMLSchema#string")
         }
       })
   }
