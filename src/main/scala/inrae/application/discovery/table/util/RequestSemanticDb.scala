@@ -53,13 +53,17 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
 
 
   def getEntities(): Future[List[(URI, String)]] = {
-    val transaction = SWDiscovery(config).something("instance")
-      .datatype(URI("label", "rdfs"), "label")
+    val transaction =
+      SWDiscovery(config).something("instance")
       .isSubjectOf(URI("a"))
         .set(URI("Class", "owl"))
       .focus("instance")
         .isSubjectOf(QueryVariable("attribute"))
           .filter.isLiteral  /* at least one literal */
+      .focus("instance")
+          .filter.not.contains("http://www.w3.org/2002/07/owl")
+      .focus("instance")
+        .datatype(URI("label", "rdfs"), "label")
       .select(List("instance", "label"))
 
     manageRequestProgression(transaction)
