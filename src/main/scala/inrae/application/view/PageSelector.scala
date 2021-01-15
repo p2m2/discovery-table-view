@@ -1,7 +1,7 @@
 package inrae.application.view
 
 import inrae.application.discovery.table.util.RequestSemanticDb
-import inrae.semantic_web.LazyFutureSwResults
+import inrae.semantic_web.SWTransaction
 import org.querki.jquery.$
 import org.scalajs.dom.MouseEvent
 import scalatags.JsDom.all._
@@ -13,7 +13,7 @@ object PageSelector {
 
   val nbPagesSelectorContainer = 10
 
-  def update(requestHandler : RequestSemanticDb,listLazyPageResults : Seq[LazyFutureSwResults],currentPage:Int) = {
+  def update(requestHandler : RequestSemanticDb,listLazyPageResults : Seq[SWTransaction],currentPage:Int) = {
 
     val minPage = currentPage - nbPagesSelectorContainer match {
       case v if v>=0 => v
@@ -85,38 +85,6 @@ object PageSelector {
           )
         )
       ).render)
-
-/*
-
-      tr(
-      td(
-        colspan:=colspanValue, // name instance and attributes
-        `class`:="link",
-        span(id:="pageBackFooter",
-          a(href:="#",
-            raw("&laquo;"))),
-        currentPage.toString + "/" + nLazyPages.toString , //id:="page"+x.toString(),
-        span(
-          id:="pageForwardFooter",
-          a(href:="#",raw("&raquo;"))
-        )
-      )
-    ).render
-
-    document.getElementById("pageBackFooter").addEventListener( "click" ,
-      (event:MouseEvent) => {
-        if ( currentPage>0) {
-          updateValues(listLazyPageResults,currentPage-1)
-        }
-      })
-
-    document.getElementById("pageForwardFooter").addEventListener( "click" ,
-      (event:MouseEvent) => {
-        if ( currentPage<=nLazyPages) {
-          updateValues(listLazyPageResults,currentPage+1)
-        }
-      })*/
-
   }
 
 }

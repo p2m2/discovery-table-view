@@ -3,12 +3,14 @@ package inrae.application
 import inrae.application.discovery.table.util.RequestSemanticDb
 import inrae.application.view.ValuesTable
 import inrae.semantic_web.rdf.URI
+import org.querki.jquery.$
 import org.scalajs.dom.raw.{HTMLInputElement, HTMLSelectElement}
-import org.scalajs.dom.{MouseEvent, document, window}
+import org.scalajs.dom.{KeyboardEvent, MouseEvent, document, window}
 import scalatags.Text.all._
 import wvlet.log.Logger.rootLogger.info
 
 import scala.scalajs.js
+import scala.scalajs.js.annotation.JSExportTopLevel
 
 object TableApp {
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
@@ -46,9 +48,9 @@ object TableApp {
 
     /* trigger when entity is selected */
     val listEntities = document.getElementById(id_entities_list).asInstanceOf[HTMLSelectElement]
-    listEntities.addEventListener( "input" , (event:MouseEvent) => {
-      println("updateAttributesHeader")
-      ValuesTable.updateAttributesHeader(requestHandler)
+
+    listEntities.addEventListener( "input" , (_:MouseEvent) => {
+        ValuesTable.updateAttributesHeader(requestHandler)
     })
   }
 
@@ -56,10 +58,14 @@ object TableApp {
 
     val endpoint = document.getElementById("endpoint").asInstanceOf[HTMLInputElement]
 
-    endpoint.addEventListener( "input" , (_:MouseEvent) => {
-      info(" -- new endpoint: "+endpoint.value)
-      setRequestSemanticDb(endpoint.value)
+    $("#button_endpoint").click(() => {
+        setRequestSemanticDb(endpoint.value)
+      })
 
+    endpoint.addEventListener( "keypress" , (event:KeyboardEvent) => {
+      if (event.key == "Enter") {
+        setRequestSemanticDb(endpoint.value)
+      }
     })
 
     endpointUserOption match {
@@ -72,9 +78,30 @@ object TableApp {
 
   }
 
+  @JSExportTopLevel("clean_table_view")
+  def clean_table_view() = {
+    window.location.reload()
+  }
+
+
+  @JSExportTopLevel("sparql_link")
+  def sparql_link() = {
+    println("sparql_link")
+    //    $("#everything").data("requestHandler",requestHandler)
+  }
+
+  @JSExportTopLevel("url_link")
+  def url_link() = {
+    println("url_link")
+    //    $("#everything").data("requestHandler",requestHandler)
+  }
+
+
+
   def main(args: Array[String]): Unit = {
     println(" -- discovery-table-view -- ")
 
+    /* Get parameters */
     val parameters = (window.location.toString
       .split("\\?")
       .lift(1).map( parameters =>

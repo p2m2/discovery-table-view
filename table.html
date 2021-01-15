@@ -11,22 +11,41 @@
 
   <body id="everything">
 
-  <table width="100%" border="1">
-    <tr>
+  <div class="container-fluid border">
+    <div class="row">
+      <div class="col-12">
+      <div class="btn-group" role="group" aria-label="Basic example">
+        <button type="button" class="btn btn-secondary" onclick="clean_table_view();">
+          <span class="fas fa-sync-alt" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="url_link();">
+          <span class="fas fa-external-link-square-alt" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="btn btn-secondary"  onclick="sparql_link();">
+          <span class="fas fa-arrow-circle-right" aria-hidden="true"></span>
+        </button>
+      </div>
+        <div>
+    </div>
+    <div class="row">
       <!-- Progression Bar -->
-      <td colspan="2">
-        <div id="bar-progress" class="progress"></div>
-      </td>
-    </tr>
-      <tr>
+      <div class="col-20">
+        <div class="row">
+          <div id="bar-progress" class="progress"></div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
         <!-- URL endpoint -->
-        <td>
+      <div class="col-2">
           <h5> Database Endpoint </h5>
-        </td>
-        <td>
-              <input id="endpoint" type="text" list="endpoints"  size="80" placeholder="http://">
+      </div>
+
+        <div class="col-4">
+              <input id="endpoint" type="text" list="endpoints"  size="70" placeholder="http://">
 
               <datalist id="endpoints">
+                <option value="http://localhost:8089/sparql" selected>local</option>
                 <option value="http://endpoint-metabolomics.ara.inrae.fr/peakforest/sparql">Peakforest</option>
                 <option value="http://endpoint-metabolomics.ara.inrae.fr/metabolights/sparql">Metabolights</option>
                 <option value="http://endpoint-metabolomics.ara.inrae.fr/chembl/sparql">ChEMBL</option>
@@ -35,20 +54,27 @@
               </datalist>
 
                 <span id="endpoint_selected"></span>
-        </td>
-      </tr>
-      <tr>
+        </div>
+
+      <div class="col">
+        <button id="button_endpoint" type="button" class="btn btn-sm btn-primary" aria-label="Left Align">
+          <span class="fas fa-arrow-circle-right" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      </div>
+    <div class="row">
         <!-- Class element -->
-        <td>
+      <div class="col-2">
           <h5> Type Element </h5>
-        </td>
-        <td>
-          <select id="entities-list" type="ent" list="data" name="entity" size="1">
+      </div>
+        <div class="col-4">
+          <select id="entities-list" type="ent" list="data" name="entity" size="0" >
             <label for="entities-list">ou sélectionner dans la liste</label>
           </select>
-        </td>
-      </tr>
-  </table>
+        </div>
+    </div>
+  </div>
 
 
   <div id="filter_container" class="container-fluid"></div>
@@ -81,6 +107,6 @@
   </div>
 
   </body>
-  <!-- <script type="text/javascript" src="./target/scala-2.13/table-fastopt.js"></script> -->
-  <script type="text/javascript" src="table-opt.js"></script>
+  <script type="text/javascript" src="./target/scala-2.13/table-fastopt.js"></script>
+  <!-- <script type="text/javascript" src="table-opt.js"></script> -->
 </html>

@@ -2,7 +2,7 @@ package inrae.application.view
 
 import inrae.application.TableApp
 import inrae.application.discovery.table.util.RequestSemanticDb
-import inrae.semantic_web.LazyFutureSwResults
+import inrae.semantic_web.SWTransaction
 import inrae.semantic_web.rdf.{Literal, URI}
 import org.scalajs.dom.document
 import org.scalajs.dom.raw.{HTMLInputElement, HTMLTableCellElement, HTMLTableSectionElement}
@@ -47,7 +47,7 @@ case object ValuesTable {
   def cleanValues() = document.getElementById(id_body_table).asInstanceOf[HTMLTableSectionElement].innerHTML = ""
 
   def updateValues(requestHandler : RequestSemanticDb,
-                   listLazyPageResults : Seq[LazyFutureSwResults],
+                   listLazyPageResults : Seq[SWTransaction],
                    currentPage: Int) : Unit = {
 
     val tbody = document.getElementById(id_body_table).asInstanceOf[HTMLTableSectionElement]
