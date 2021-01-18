@@ -20,6 +20,7 @@ Try on http://localhost:9909/
 # Dev Dockerized
 
 ```bash
+# add <script type="text/javascript" src="table-opt.js"></script> in table.html
 sbt fullOptJS
 chmod 644 ./target/scala-2.13/table-opt.js
 docker build . -t table-view-discovery

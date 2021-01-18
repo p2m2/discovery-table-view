@@ -21,6 +21,7 @@ case object ValuesTable {
 
   def clean() = {
     document.getElementById(id_tr_header_table).innerHTML = tr().render
+    document.getElementById(id_body_table).asInstanceOf[HTMLTableSectionElement].innerHTML = ""
   }
 
   def currentAttributes() : Map[URI,Int] = {

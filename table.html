@@ -9,21 +9,25 @@
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.1/css/all.css">
   </head>
 
+  <script src="endpoints.js"> </script>
+
   <body id="everything">
 
   <div class="container-fluid border">
     <div class="row">
       <div class="col-12">
       <div class="btn-group" role="group" aria-label="Basic example">
-        <button type="button" class="btn btn-secondary" onclick="clean_table_view();">
+        <button type="button" class="btn btn-primary" onclick="clean_table_view();">
           <span class="fas fa-sync-alt" aria-hidden="true"></span>
         </button>
-        <button type="button" class="btn btn-secondary" onclick="url_link();">
+        <!--
+        <button type="button" class="btn btn-primary" onclick="url_link();">
           <span class="fas fa-external-link-square-alt" aria-hidden="true"></span>
         </button>
-        <button type="button" class="btn btn-secondary"  onclick="sparql_link();">
+        <button type="button" class="btn btn-primary"  onclick="sparql_link();">
           <span class="fas fa-arrow-circle-right" aria-hidden="true"></span>
         </button>
+        -->
       </div>
         <div>
     </div>
@@ -45,12 +49,6 @@
               <input id="endpoint" type="text" list="endpoints"  size="70" placeholder="http://">
 
               <datalist id="endpoints">
-                <option value="http://localhost:8089/sparql" selected>local</option>
-                <option value="http://endpoint-metabolomics.ara.inrae.fr/peakforest/sparql">Peakforest</option>
-                <option value="http://endpoint-metabolomics.ara.inrae.fr/metabolights/sparql">Metabolights</option>
-                <option value="http://endpoint-metabolomics.ara.inrae.fr/chembl/sparql">ChEMBL</option>
-                <option value="https://dbpedia.org/sparql">DBPedia</option>
-                <option value="https://cors-anywhere.herokuapp.com/https://bbip.askomics.org/virtuoso/sparql">bbip</option>
               </datalist>
 
                 <span id="endpoint_selected"></span>
@@ -95,7 +93,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel">Processing<i class="fas fa-spinner fa-spin"></i></h5>
+          <h5 class="modal-title" id="processingModalLabel">Processing<i class="fas fa-spinner fa-spin"></i></h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div id="message-data-processing" class="modal-body"></div>
@@ -107,6 +105,17 @@
   </div>
 
   </body>
-  <script type="text/javascript" src="./target/scala-2.13/table-fastopt.js"></script>
-  <!-- <script type="text/javascript" src="table-opt.js"></script> -->
+
+  <!-- <script type="text/javascript" src="./target/scala-2.13/table-fastopt.js"></script> -->
+  <script type="text/javascript" src="table-opt.js"></script>
+  <script>
+    let dropdown = $('#endpoints');
+    dropdown.empty();
+    dropdown.append('<option selected="true" disabled>Choose Dataset Endpoint</option>');
+    dropdown.prop('selectedIndex', 0);
+
+    $.each( endpoints, function( index, endpoint ) {
+      dropdown.append( "<option value='" + endpoint.url + "'>" + endpoint.name + "</li>" );
+    });
+  </script>
 </html>

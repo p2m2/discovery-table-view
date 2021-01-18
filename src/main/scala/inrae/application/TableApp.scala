@@ -17,6 +17,12 @@ object TableApp {
 
   val id_entities_list = "entities-list"
 
+  def cleanTableApp() = {
+    document.getElementById(id_entities_list).innerHTML = ""
+    ValuesTable.clean()
+
+  }
+
   def currentEntity() : URI = {
     info(" -- currentEntity -- ")
     val selectedEntity = document.getElementById(id_entities_list).asInstanceOf[HTMLSelectElement]

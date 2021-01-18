@@ -193,25 +193,31 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
     }
   }
 
-
-  def getTypeAttribute(uriEntity : URI, uriAttribute : URI) : Future[URI] = {
+  /*
+      Retourn datatype and some values to fill an example list
+   */
+  def getTypeAttribute(uriEntity : URI, uriAttribute : URI) : Future[(URI,Seq[String])] = {
 
     val transaction = SWDiscovery(config)
                  .something("instance")
                  .isA(uriEntity)
                  .isSubjectOf(uriAttribute,"vi")
-                 .select(List("values"),50)
+                 .select(List("values"),8)
 
     manageRequestProgression(transaction)
 
     transaction.commit().raw.map(
       response => {
+        println("test..")
+
+        val values = response("results")("bindings").arr.map(r => SparqlBuilder.createLiteral(r("vi")).value).distinct.toSeq
+        println(values)
         Try(response("results")("bindings").arr.map(r => r("vi")("datatype")).distinct match {
           case l if l.length == 1 => URI(l(0).toString())
           case _ => URI("http://www.w3.org/2001/XMLSchema#string")
         }) match {
-          case Success(v) => v
-          case Failure(_) => URI("http://www.w3.org/2001/XMLSchema#string")
+          case Success(v) => (v,values)
+          case Failure(_) => (URI("http://www.w3.org/2001/XMLSchema#string"),values)
         }
       })
   }
