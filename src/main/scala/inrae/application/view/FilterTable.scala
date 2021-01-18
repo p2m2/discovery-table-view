@@ -19,11 +19,21 @@ case object FilterTable {
   var l_box_filter : List[(URI,URI)] = List()
 
   def button_add_filter() : Text.TypedTag[String] = {
-    button(id:=_button_add_filter, `class`:="btn btn-sm btn-primary", width:="120px", "Add filter")
+    button(id:=_button_add_filter, `class`:="btn btn-sm btn-secondary",
+      span(
+        `class`:="fas fa-filter",
+        aria.hidden:="true"
+      )
+    )
   }
 
   def button_apply() : Text.TypedTag[String] = {
-    button(id:=_button_apply_filter, `class`:="btn btn-sm btn-primary", width:="120px", "Apply")
+    button(id:=_button_apply_filter, `class`:="btn btn-sm btn-secondary",
+      span(
+        `class`:="fas fa-rocket",
+        aria.hidden:="true"
+      )
+    )
   }
 
   def button_apply_action(requestHandler : RequestSemanticDb): Unit = {
@@ -82,21 +92,29 @@ case object FilterTable {
     /* button add + box filter */
     body.innerHTML =
       div(
-        `class`:="row row-cols-auto",
+        `class`:="row",
         div(
           `class`:="col",
-          button_add_filter()
-        ),
-        div(
-          `class`:="col",
-          button_apply()
-        ) , l_box_filter.zipWithIndex.map( GroupAndIdx  => {
-        val typeAndAttributeUri = GroupAndIdx._1
-        val idx = GroupAndIdx._2
           div(
-            `class`:="col", filter_box(idx,typeAndAttributeUri._1,typeAndAttributeUri._2),
+          `class`:="btn-group btn-group-horizontal",
+            button_add_filter(),
+            button_apply(),
+            div(
+              `class`:="container",
+              div(
+                `class`:="row",
+                  l_box_filter.zipWithIndex.map( GroupAndIdx  => {
+                  val typeAndAttributeUri = GroupAndIdx._1
+                  val idx = GroupAndIdx._2
+                    div(
+                      `class`:="col", filter_box(idx,typeAndAttributeUri._1,typeAndAttributeUri._2),
+                     )
+                  })
+              )
+            )
           )
-      })).render
+        )
+      ).render
 
     /* set up trigger to remove box filter */
     l_box_filter.zipWithIndex.map(_._2).foreach( index => {

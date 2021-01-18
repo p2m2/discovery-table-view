@@ -12,6 +12,9 @@ object ProgressBar {
   val id_progress_bar = "bar-progress"
   var div_progress_bar = "div-bar-progress"
 
+  $("#processing-data").on("hidden.bs.modal", () => {
+    closeWaitModal()
+  });
 
   def setDivProgressBar(percent : Double) = {
    div(
@@ -34,19 +37,21 @@ object ProgressBar {
       if ( nModal == 1 ) {
         $("#message-data-processing").empty().append(p().render)
         $("#processing-data-button").click()
+        $("#message-data-processing2").empty().append(p().render)
+        $("#processing-data-button2").click()
       }
     }
   }
 
   def closeWaitModal() = {
-    this.synchronized {
-      nModal -=  1
-      if ( nModal == 0 ) {
-        setTimeout(1000) {
-          $("#close-processing-data-button").click()
+    setTimeout(1000) {
+      this.synchronized {
+        nModal -=  1
+        if ( nModal == 0 ) {
+            $("#close-processing-data-button").click()
+          }
         }
       }
-    }
   }
 
   def modalDisplayError(message: String) = {
