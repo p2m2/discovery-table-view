@@ -16,7 +16,7 @@ case object FilterTable {
   val id_filter_table_body = "filter_container"
   val _button_add_filter="add_filter"
   val _button_apply_filter="apply_filter"
-  var l_box_filter : List[(URI,URI)] = List()
+  var l_box_filter : List[(URI,URI,Seq[String])] = List()
 
   def button_add_filter() : Text.TypedTag[String] = {
     button(id:=_button_add_filter, `class`:="btn btn-sm btn-secondary",
@@ -44,7 +44,6 @@ case object FilterTable {
           val uri = v._1
           val idx = v._2
           val typeBox = l_box_filter(idx)._1
-
 
           typeBox.toString() match {
             case "<http://www.w3.org/2001/XMLSchema#integer>" | "<http://www.w3.org/2001/XMLSchema#float>" |
@@ -107,7 +106,7 @@ case object FilterTable {
                   val typeAndAttributeUri = GroupAndIdx._1
                   val idx = GroupAndIdx._2
                     div(
-                      `class`:="col", filter_box(idx,typeAndAttributeUri._1,typeAndAttributeUri._2),
+                      `class`:="col", filter_box(idx,typeAndAttributeUri._1,typeAndAttributeUri._2,typeAndAttributeUri._3),
                      )
                   })
               )
@@ -150,9 +149,11 @@ case object FilterTable {
         select_f.addEventListener( "click" ,
           (event:MouseEvent) => {
             val attributePropertyUri = URI(select_f.value)
-            requestHandler.getTypeAttribute(entityClassUri,attributePropertyUri).map( `type`  => {
+            requestHandler.getTypeAttribute(entityClassUri,attributePropertyUri).map( res  => {
+              val `type`              = res._1
+              val listExamplesValues  = res._2
 
-              l_box_filter = l_box_filter ++ List((`type`,attributePropertyUri))
+              l_box_filter = l_box_filter ++ List((`type`,attributePropertyUri,listExamplesValues))
               /* refresh list box */
               updateFilterTable(requestHandler)
 
@@ -169,7 +170,7 @@ case object FilterTable {
   }
 
 
-  def filter_box(idBox: Int, `type` : URI, attributePropertyUri : URI) : Text.TypedTag[String] = {
+  def filter_box(idBox: Int, `type` : URI, attributePropertyUri : URI, examples_values:Seq[String]) : Text.TypedTag[String] = {
     val idBoxString = prefix_box+idBox.toString
     val title = attributePropertyUri.naiveLabel()
 

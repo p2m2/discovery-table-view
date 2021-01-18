@@ -9,32 +9,7 @@
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.1/css/all.css">
   </head>
 
-  <script>
-  //ENDPOINTS---------
-  var endpoints = [
-      {
-        "name": "MetaboRef",
-        "url": "http://localhost:8089/sparql"
-      },
-      {
-        "name": "Peakforest - Forum",
-        "url": "http://endpoint-metabolomics.ara.inrae.fr/peakforest/sparql"
-      },
-      {
-        "name": "Metabolights - Forum",
-        "url": "http://endpoint-metabolomics.ara.inrae.fr/metabolights/sparql"
-      },
-      {
-        "name": "DBPedia",
-        "url": "https://dbpedia.org/sparql"
-      },
-      {
-        "name": "BBIP - Brassicaceae BioInformatics Platform",
-        "url": "https://cors-anywhere.herokuapp.com/https://bbip.askomics.org/virtuoso/sparql"
-      }
-    ]
-   //FIN_ENDPOINTS---------
-  </script>
+  <script src="endpoints.js"> </script>
 
   <body id="everything">
 
@@ -72,12 +47,6 @@
               <input id="endpoint" type="text" list="endpoints"  size="70" placeholder="http://">
 
               <datalist id="endpoints">
-              <!--  <option value="http://localhost:8089/sparql" selected>local</option>
-                <option value="http://endpoint-metabolomics.ara.inrae.fr/peakforest/sparql">Peakforest</option>
-                <option value="http://endpoint-metabolomics.ara.inrae.fr/metabolights/sparql">Metabolights</option>
-                <option value="http://endpoint-metabolomics.ara.inrae.fr/chembl/sparql">ChEMBL</option>
-                <option value="https://dbpedia.org/sparql">DBPedia</option>
-                <option value="https://cors-anywhere.herokuapp.com/https://bbip.askomics.org/virtuoso/sparql">bbip</option> -->
               </datalist>
 
                 <span id="endpoint_selected"></span>
