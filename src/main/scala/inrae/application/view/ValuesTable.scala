@@ -2,26 +2,26 @@ package inrae.application.view
 
 import inrae.application.TableApp
 import inrae.application.discovery.table.util.RequestSemanticDb
-import inrae.semantic_web.LazyFutureJsonValue
+import inrae.semantic_web.SWTransaction
 import inrae.semantic_web.rdf.{Literal, URI}
-import org.scalajs.dom.{MouseEvent, document}
-import org.scalajs.dom.raw.{HTMLInputElement, HTMLSelectElement, HTMLTableCellElement, HTMLTableSectionElement}
+import org.scalajs.dom.document
+import org.scalajs.dom.raw.{HTMLInputElement, HTMLTableCellElement, HTMLTableSectionElement}
 import scalatags.Text.all._
 import wvlet.log.Logger.rootLogger.info
 
 import scala.concurrent.Future
 
-case class ValuesTable(requestHandler : RequestSemanticDb) {
+case object ValuesTable {
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   val id_tr_header_table = "results_table_tr_thead"
-  val id_footer_table = "footer_table"
   val id_body_table = "results_table_body"
 
   var nLazyPages = 0
 
   def clean() = {
     document.getElementById(id_tr_header_table).innerHTML = tr().render
+    document.getElementById(id_body_table).asInstanceOf[HTMLTableSectionElement].innerHTML = ""
   }
 
   def currentAttributes() : Map[URI,Int] = {
@@ -47,7 +47,8 @@ case class ValuesTable(requestHandler : RequestSemanticDb) {
 
   def cleanValues() = document.getElementById(id_body_table).asInstanceOf[HTMLTableSectionElement].innerHTML = ""
 
-  def updateValues(listLazyPageResults : Seq[LazyFutureJsonValue],
+  def updateValues(requestHandler : RequestSemanticDb,
+                   listLazyPageResults : Seq[SWTransaction],
                    currentPage: Int) : Unit = {
 
     val tbody = document.getElementById(id_body_table).asInstanceOf[HTMLTableSectionElement]
@@ -58,6 +59,7 @@ case class ValuesTable(requestHandler : RequestSemanticDb) {
     val lUriAtt = currentAttributes()
 
     requestHandler.getValuesFromLazyPage(listLazyPageResults(currentPage), lUriAtt.keys.toList).map( lValues => {
+
       tbody.innerHTML = lValues.keys.map(  uriInstance => {
 
         val mapUriAndLiteral = lValues(uriInstance)
@@ -74,12 +76,10 @@ case class ValuesTable(requestHandler : RequestSemanticDb) {
       }).map( _.render ).mkString("")
     })
 
-    /* footer update */
-    updateFooter(listLazyPageResults,currentPage,lUriAtt.keys.toList.length+1)
-
+    PageSelector.update(requestHandler,listLazyPageResults,currentPage)
   }
 
-  def updateTriggerPages(listFilters : Seq[(URI,String,Literal)] = List()) : Future[Unit] = {
+  def updateTriggerPages(requestHandler : RequestSemanticDb,listFilters : Seq[(URI,String,Literal)] = List()) : Future[Unit] = {
     info(" -- updateValue -- ")
     cleanValues()
 
@@ -88,47 +88,11 @@ case class ValuesTable(requestHandler : RequestSemanticDb) {
     requestHandler.getLazyPagesValues(TableApp.currentEntity(), listFilters, lUriAtt.keys.toList ).map((some) => {
       nLazyPages = some._1
       val allLazyPages = some._2
-      updateValues(allLazyPages,0)
+      updateValues(requestHandler,allLazyPages,0)
     })
   }
 
   def cleanHeader() = document.getElementById(id_tr_header_table).innerHTML = ""
-
-  def updateFooter(listLazyPageResults : Seq[LazyFutureJsonValue],currentPage:Int,colspanValue : Int) = {
-    info(" -- updateFooter -- ")
-    val footer = document.getElementById(id_footer_table)
-
-    footer.innerHTML = tr(
-      td(
-        colspan:=colspanValue, // name instance and attributes
-        `class`:="link",
-        span(id:="pageBackFooter",
-          a(href:="#",
-            raw("&laquo;"))),
-        currentPage.toString + "/" + nLazyPages.toString , //id:="page"+x.toString(),
-        span(
-          id:="pageForwardFooter",
-          a(href:="#",raw("&raquo;"))
-        )
-      )
-    ).render
-
-    document.getElementById("pageBackFooter").addEventListener( "click" ,
-      (event:MouseEvent) => {
-        if ( currentPage>0) {
-          updateValues(listLazyPageResults,currentPage-1)
-        }
-      })
-
-    document.getElementById("pageForwardFooter").addEventListener( "click" ,
-      (event:MouseEvent) => {
-        if ( currentPage<=nLazyPages) {
-          updateValues(listLazyPageResults,currentPage+1)
-        }
-      })
-
-  }
-
 
   /**
    * Build theader tag . Contains
@@ -138,7 +102,7 @@ case class ValuesTable(requestHandler : RequestSemanticDb) {
    * @param requestHandler
    * @return
    */
-  def updateAttributesHeader() = {
+  def updateAttributesHeader(requestHandler : RequestSemanticDb) = {
     info(" -- updateAttributesHeader -- ")
     //cleanHeader()
 
@@ -150,7 +114,6 @@ case class ValuesTable(requestHandler : RequestSemanticDb) {
       attributes.zipWithIndex.map( objet => {
         val attrib = objet._1
         val idx = objet._2
-        println(attrib+","+idx)
         th(id:=attrib._1.toString, // uri
           attrib._2,              // label
           input(`type`:="hidden" , value:=idx+1))} ) // rang
@@ -158,8 +121,8 @@ case class ValuesTable(requestHandler : RequestSemanticDb) {
       list => {
         document.getElementById(id_tr_header_table).innerHTML = tr(th(" - "),list).render
       }).andThen ( _ => {
-        ValuesTable(requestHandler).updateTriggerPages()
-        FilterTable(requestHandler).updateFilterTable()
+        ValuesTable.updateTriggerPages(requestHandler)
+        FilterTable.updateFilterTable(requestHandler)
     } )
   }
 
