@@ -23,7 +23,7 @@ workflows:
               ignore: /.*/
             branches:
               only:
-                - develop fix_circle_ci
+                - develop
 
       # all tags are build and push on dockerhub !
       - build_tag_latest:
