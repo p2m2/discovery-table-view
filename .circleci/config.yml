@@ -40,6 +40,8 @@ workflows:
           context:
             - DOCKER_CONTEXT
           filters:
+            tags:
+              only: /.*/
             branches:
               # nothing coming from branch are deployed as latest
               ignore: /.*/
