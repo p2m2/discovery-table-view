@@ -4,12 +4,12 @@ var endpoints = [
     "url": "http://localhost:8089/sparql"
   },
   {
-    "name": "Peakforest - Forum",
-    "url": "http://endpoint-metabolomics.ara.inrae.fr/peakforest/sparql"
+    "name": "The Metabolomics spectral database web portal",
+    "url": "https://peakforest.semantic-metabolomics.fr/sparql"
   },
   {
     "name": "Metabolights - Forum",
-    "url": "http://endpoint-metabolomics.ara.inrae.fr/metabolights/sparql"
+    "url": "https://metabolights.semantic-metabolomics.fr/sparql"
   },
   {
     "name": "DBPedia",
