@@ -11,7 +11,15 @@ workflows:
   docker-publication-workflow:
     jobs:
       # build Js lib
-      - build_js
+      - build_js:
+          context:
+            - DOCKER_CONTEXT
+          filters:
+            tags:
+              ignore: /.*/
+            branches:
+              only:
+                - develop
       # only develop is build and push on dockerhub !
       - build_branch:
           requires:
@@ -32,8 +40,6 @@ workflows:
           context:
             - DOCKER_CONTEXT
           filters:
-            tags:
-              only: /.*/
             branches:
               # nothing coming from branch are deployed as latest
               ignore: /.*/
