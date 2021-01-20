@@ -24,7 +24,6 @@ workflows:
             branches:
               only:
                 - develop
-                - 0.0.2a
 
       # all tags are build and push on dockerhub !
       - build_tag_latest:
