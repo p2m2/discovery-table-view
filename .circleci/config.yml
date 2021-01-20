@@ -16,7 +16,7 @@ workflows:
             - DOCKER_CONTEXT
           filters:
             tags:
-              ignore: /.*/
+              only: /.*/
             branches:
               only:
                 - develop
