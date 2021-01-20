@@ -10,6 +10,8 @@ version: 2.1
 workflows:
   docker-publication-workflow:
     jobs:
+      # build Js lib
+      - build_js
       # only develop is build and push on dockerhub !
       - build_branch:
           context:
@@ -75,6 +77,7 @@ jobs:
              docker build -t ${ORGANIZATION_NAME}/${IMAGE_NAME} .
              echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
              docker push ${ORGANIZATION_NAME}/${IMAGE_NAME}
+
   build_tag_latest:
     executor: docker-publisher
     steps:
