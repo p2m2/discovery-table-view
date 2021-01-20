@@ -11,7 +11,15 @@ workflows:
   docker-publication-workflow:
     jobs:
       # build Js lib
-      - build_js
+      - build_js:
+          context:
+            - DOCKER_CONTEXT
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              only:
+                - develop
       # only develop is build and push on dockerhub !
       - build_branch:
           requires:
