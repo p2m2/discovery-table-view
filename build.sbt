@@ -5,7 +5,7 @@ lazy val scalaReflectPortableVersion = "1.0.0"
 
 scalaVersion := "2.13.4"
 name := "table"
-version := "0.0.1"
+version := "0.0.2a"
 organization := "com.github.p2m2"
 scalaJSUseMainModuleInitializer := true
 mainClass in Compile := Some("inrae.application.TableApp")
