@@ -11,12 +11,14 @@ scalaJSUseMainModuleInitializer := true
 mainClass in Compile := Some("inrae.application.TableApp")
 
 resolvers += Resolver.bintrayRepo("hmil", "maven")
+resolvers ++= Seq("snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+  "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
 
 libraryDependencies ++= Seq(
   "com.lihaoyi" %%% "scalatags" % scalatagVersion,
   "org.portable-scala" %%% "portable-scala-reflect" % scalaReflectPortableVersion,
   "org.querki" %%% "jquery-facade" % "2.0",
-  "com.github.p2m2" %%% "discovery" % "0.0.2-beta.3",
+  "com.github.p2m2" %%% "discovery" % "0.0.2-beta.3-SNAPSHOT",
 )
 
 
