@@ -72,12 +72,12 @@ jobs:
       - checkout
       - setup_remote_docker
       - run: |
-          sbt fullOptJS
-          chmod 644 ./target/scala-2.13/table-opt.js
+          sbt fullOptJS::webpack
+          chmod 644 ./target/scala-2.13/scalajs-bundler/main/table-opt-bundle.js
       - persist_to_workspace:
-          root: ./target/scala-2.13/
+          root: ./target/scala-2.13/scalajs-bundler/main/
           paths:
-            - table-opt.js
+            - table-opt-bundle.js
 
 
   build_branch:
@@ -87,7 +87,7 @@ jobs:
       - checkout
       - setup_remote_docker
       - attach_workspace:
-          at: ~/repo/target/scala-2.13/
+          at: ~/repo/target/scala-2.13/scalajs-bundler/main/
       - run:
           name: Publish Docker Image to Docker Hub
           # publication of <application>:<application_branch>
@@ -104,7 +104,7 @@ jobs:
       - checkout
       - setup_remote_docker
       - attach_workspace:
-          at: ~/repo/target/scala-2.13/
+          at: ~/repo/target/scala-2.13/scalajs-bundler/main/
       - run:
           name: Publish Docker Tag to Docker Hub
           # publication of <application>:<application_tag>
