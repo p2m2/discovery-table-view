@@ -33,6 +33,7 @@ workflows:
             branches:
               only:
                 - develop
+                - update_discovery_0.0.4
 
       # all tags are build and push on dockerhub !
       - build_tag_latest:
