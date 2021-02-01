@@ -33,7 +33,6 @@ workflows:
             branches:
               only:
                 - develop
-                - update_discovery_0.0.4
 
       # all tags are build and push on dockerhub !
       - build_tag_latest:
@@ -70,22 +69,22 @@ jobs:
       # Customize the JVM maximum heap limit
       JVM_OPTS: -Xmx3200m
       TERM: dumb
-      NVS_VERSION: 1.5.0
-
+      NVS_VERSION: 1.2.0
     steps:
       - checkout
       - setup_remote_docker
-
-      - run: git clone --branch v$NVS_VERSION --depth 1 https://github.com/jasongin/nvs ~/.nvs
-      - run: . ~/.nvs/nvs.sh
-      - run: nvs --version
-      - run: nvs add latest
-      - run: nvs use latest
-      - run: node --version
-      - run: npm --version
-      - run: sbt fullOptJS::webpack
-      - run: chmod 644 ./target/scala-2.13/scalajs-bundler/main/table-opt-bundle.js
-
+      - run:
+          name: Install nvs - node - npm - compile fullOptJS::webpack
+          command: |
+            git clone --branch v$NVS_VERSION --depth 1 https://github.com/jasongin/nvs ~/.nvs
+            . ~/.nvs/nvs.sh
+            nvs --version
+            nvs add latest
+            nvs use latest
+            node --version
+            npm --version
+            sbt fullOptJS::webpack
+            chmod 644 ./target/scala-2.13/scalajs-bundler/main/table-opt-bundle.js
       - persist_to_workspace:
           root: ./target/scala-2.13/scalajs-bundler/main/
           paths:
