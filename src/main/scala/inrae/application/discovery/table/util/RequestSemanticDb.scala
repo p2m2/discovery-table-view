@@ -12,8 +12,7 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
 
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  val config: StatementConfiguration = StatementConfiguration()
-  config.setConfigString(
+  val config: StatementConfiguration = StatementConfiguration.setConfigString(
     """
       {
        "sources" : [{
@@ -53,6 +52,7 @@ case class RequestSemanticDb(endpoint: String, method: String = "POST", `type`: 
 
 
   def getEntities(): Future[List[(URI, String)]] = {
+
     val transaction =
       SWDiscovery(config).something("instance")
       .isSubjectOf(URI("a"))
