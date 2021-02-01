@@ -60,7 +60,7 @@ jobs:
   build_js:
     docker:
       # specify the version you desire here
-      - image: cimg/openjdk:14.0-node
+      - image: circleci/openjdk:8-jdk
         auth:
           username: ${DOCKER_USER}
           password: ${DOCKER_PASS}
@@ -73,6 +73,11 @@ jobs:
       - checkout
       - setup_remote_docker
       - run: |
+          export NVS_HOME="~/.nvs"
+          git clone https://github.com/jasongin/nvs "$NVS_HOME"
+          . "$NVS_HOME/nvs.sh" install
+          nvs add latest
+          nvs use latest
           sbt fullOptJS::webpack
           chmod 644 ./target/scala-2.13/scalajs-bundler/main/table-opt-bundle.js
       - persist_to_workspace:
