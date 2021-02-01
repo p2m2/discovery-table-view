@@ -20,6 +20,7 @@ workflows:
             branches:
               only:
                 - develop
+                - update_discovery_0.0.4
       # only develop is build and push on dockerhub !
       - build_branch:
           requires:
@@ -59,7 +60,7 @@ jobs:
   build_js:
     docker:
       # specify the version you desire here
-      - image: circleci/openjdk:8-jdk
+      - image: cimg/openjdk:8.0-node
         auth:
           username: ${DOCKER_USER}
           password: ${DOCKER_PASS}
