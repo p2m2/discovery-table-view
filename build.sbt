@@ -4,7 +4,7 @@ lazy val scalaReflectPortableVersion = "1.0.0"
 
 scalaVersion := "2.13.4"
 name := "table"
-version := "0.0.2a"
+version := "0.0.4"
 organization := "com.github.p2m2"
 scalaJSUseMainModuleInitializer := true
 mainClass in Compile := Some("inrae.application.TableApp")
@@ -19,7 +19,7 @@ resolvers ++= Seq("snapshots" at "https://oss.sonatype.org/content/repositories/
 libraryDependencies ++= Seq(
   "com.lihaoyi" %%% "scalatags" % scalatagVersion,
   "org.querki" %%% "jquery-facade" % "2.0",
-  "com.github.p2m2" %%% "discovery" % "local-SNAPSHOT",
+  "com.github.p2m2" %%% "discovery" % "develop-SNAPSHOT",
 )
 
 scalaJSLinkerConfig in (Compile, fastOptJS ) ~= {
