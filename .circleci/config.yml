@@ -60,7 +60,7 @@ jobs:
   build_js:
     docker:
       # specify the version you desire here
-      - image: cimg/openjdk:8.0-node
+      - image: cimg/openjdk:14.0-node
         auth:
           username: ${DOCKER_USER}
           password: ${DOCKER_PASS}
